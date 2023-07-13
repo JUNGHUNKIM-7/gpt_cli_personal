@@ -13,15 +13,18 @@ import (
 )
 
 func main() {
-	runProgram(getToken())
+	if keys, vals := getToken(); keys == nil || vals == nil {
+		log.Fatal("keys||vals are nil")
+	} else {
+		runProgram(keys, vals)
+	}
 }
 
-func getToken() string {
+func getToken() (ks, vs []string) {
 	var (
-		token       string
-		// temperature string
+		keys []string
+		vals []string
 	)
-
 	f, err := os.Open("./env.txt")
 	if err != nil {
 		log.Fatal(err)
@@ -31,12 +34,20 @@ func getToken() string {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		key, value := keyValueSplitter(scanner)
-		if key != "openai" {
-			log.Fatal("not found key \"openai\"")
-		}
-		token = value
+		keys = append(keys, key)
+		vals = append(vals, value)
 	}
-	return token
+
+	for _, v := range keys {
+		if v == "openai" {
+			ks = keys
+			vs = vals
+			return
+		}
+	}
+	ks = nil
+	vs = nil
+	return
 }
 
 func keyValueSplitter(scanner *bufio.Scanner) (string, string) {
@@ -45,15 +56,27 @@ func keyValueSplitter(scanner *bufio.Scanner) (string, string) {
 	return key, value
 }
 
-func runProgram(gptToken string) {
-	defaultConfig := &model.GptConfig{
-		Temperature: 0.8,
+func findValueByKey(keys []string, key string) int {
+	for i, v := range keys {
+		if v == key {
+			return i
+		}
+	}
+	return -1
+}
+
+func runProgram(keys, vals []string) {
+	if findValueByKey(keys, "openai") == -1 {
+		log.Fatal("empty openai key")
 	}
 
+	config := &model.GptConfig{
+		Temperature: 0.5,
+	}
+	idx := findValueByKey(keys, "openai")
 	defaultEnv := &model.Env{
-		GptToken: gptToken,
+		GptToken: vals[idx],
 	}
-
 	wg := sync.WaitGroup{}
 	histories := make([]model.QnaBody, 0)
 
@@ -77,17 +100,19 @@ l1:
 					}
 				} else {
 					if !strings.ContainsRune(q, '@') {
-						body := program.MakeRequest(q, defaultConfig, defaultEnv, nil)
+						body := program.MakeRequest(q, config, defaultEnv, nil)
 						histories = append(histories, body)
+
 						printBody(body)
 					} else {
 						qs := strings.Split(q, "@")
-						wg.Add(len(qs))
 
+						wg.Add(len(qs))
 						for _, v := range qs {
 							go func(str string) {
-								body := program.MakeRequest(str, defaultConfig, defaultEnv, &wg)
+								body := program.MakeRequest(str, config, defaultEnv, &wg)
 								histories = append(histories, body)
+
 								printBody(body)
 							}(v)
 						}
