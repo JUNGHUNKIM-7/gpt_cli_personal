@@ -20,7 +20,7 @@ func main() {
 	}
 }
 
-func getToken() (ks, vs []string) {
+func getToken() (listOfKeys, listOfValues []string) {
 	var (
 		keys []string
 		vals []string
@@ -40,13 +40,13 @@ func getToken() (ks, vs []string) {
 
 	for _, v := range keys {
 		if v == "openai" {
-			ks = keys
-			vs = vals
+			listOfKeys = keys
+			listOfValues = vals
 			return
 		}
 	}
-	ks = nil
-	vs = nil
+	listOfKeys = nil
+	listOfValues = nil
 	return
 }
 
@@ -65,17 +65,16 @@ func findValueByKey(keys []string, key string) int {
 	return -1
 }
 
-func runProgram(keys, vals []string) {
-	if findValueByKey(keys, "openai") == -1 {
+func runProgram(listOfKeys, listOfValues []string) {
+	if findValueByKey(listOfKeys, "openai") == -1 {
 		log.Fatal("empty openai key")
 	}
-
 	config := &model.GptConfig{
 		Temperature: 0.5,
 	}
-	idx := findValueByKey(keys, "openai")
+	idx := findValueByKey(listOfKeys, "openai")
 	defaultEnv := &model.Env{
-		GptToken: vals[idx],
+		GptToken: listOfValues[idx],
 	}
 	wg := sync.WaitGroup{}
 	histories := make([]model.QnaBody, 0)
@@ -99,12 +98,13 @@ l1:
 					default:
 					}
 				} else {
-					if !strings.ContainsRune(q, '@') {
+					switch contains := !strings.ContainsRune(q, '@'); contains {
+					case true:
 						body := program.MakeRequest(q, config, defaultEnv, nil)
 						histories = append(histories, body)
 
 						printBody(body)
-					} else {
+					case false:
 						qs := strings.Split(q, "@")
 
 						wg.Add(len(qs))
@@ -127,5 +127,5 @@ l1:
 }
 
 func printBody(b model.QnaBody) {
-	fmt.Printf("Q:%s\nA:%s\n\n", b.Q, b.A)
+	fmt.Printf("Q:%s\nA:%s\n-----\n", b.Q, b.A)
 }
