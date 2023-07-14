@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"log"
 	"os"
 	"strconv"
@@ -17,11 +18,24 @@ func main() {
 	if keys, vals := program.GetToken(); keys == nil || vals == nil {
 		log.Fatal("keys||vals are nil")
 	} else {
+		uri := program.FindValueByKey(keys, vals, "mongouri")
+		if uri == "" {
+			log.Fatal("mongouri isn't provided")
+		}
+
+		program.Initialize(uri)
 		log.Fatal(runProgram(keys, vals))
+
 	}
 }
 
 func runProgram(listOfKeys, listOfValues []string) error {
+	defer func() {
+		if err := program.Client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
+
 	if program.FindValueByKey(listOfKeys, listOfValues, "openai") == "" {
 		log.Fatal("empty openai key")
 	}
@@ -77,6 +91,32 @@ l1:
 						for i, v := range histories {
 							program.PrintBody(i, v, answerf)
 						}
+					case "g":
+						param := strings.Split(q, " ")[1:]
+						searchParam := strings.Join(param, " ")
+						historyFrom := program.GetData(searchParam)
+						for i, v := range historyFrom {
+							program.PrintBody(i, *v, answerf)
+						}
+					case "s":
+						param := strings.Split(q, " ")[1]
+						idx, err := strconv.Atoi(param)
+						if err != nil {
+							errf("%s can't be converted to index\n", param)
+							continue l1
+						}
+						if len(histories) < 1 {
+							eln("Err: No Histories")
+							continue l1
+						}
+						body := histories[idx]
+						program.SetData(&body)
+					case "a":
+						if len(histories) < 1 {
+							eln("Err: No Histories")
+							continue l1
+						}
+						program.SetAll(histories)
 					case "q":
 						os.Exit(1)
 					default:
