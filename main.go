@@ -22,10 +22,8 @@ func main() {
 		if uri == "" {
 			log.Fatal("mongouri isn't provided")
 		}
-
 		program.Initialize(uri)
 		log.Fatal(runProgram(keys, vals))
-
 	}
 }
 
@@ -80,10 +78,9 @@ l1:
 						param := strings.Split(q, " ")[1]
 						idx, err := strconv.Atoi(param)
 						if err != nil {
-							errf("%s can't be converted to index\n", param)
+							eln("can't be converted to index")
 							continue l1
-						}
-						if len(histories) < 1 {
+						} else if len(histories) < 1 {
 							eln("Err: No Histories")
 							continue l1
 						}
@@ -93,19 +90,34 @@ l1:
 						}
 					case "g":
 						param := strings.Split(q, " ")[1:]
+						if len(param) == 0 {
+							eln("Search param hasn't not provided")
+							continue l1
+						}
 						searchParam := strings.Join(param, " ")
 						historyFrom := program.GetData(searchParam)
 						for i, v := range historyFrom {
 							program.PrintBody(i, *v, answerf)
 						}
 					case "s":
-						param := strings.Split(q, " ")[1]
-						idx, err := strconv.Atoi(param)
-						if err != nil {
-							errf("%s can't be converted to index\n", param)
+						param := strings.Split(q, " ")[1:]
+						if len(param) == 0 {
+							eln("Save Index hasn't not provided")
 							continue l1
 						}
-						if len(histories) < 1 {
+						searchParam := param[0]
+						if searchParam == "" {
+							eln("Save Index hasn't not provided")
+							continue l1
+						} else if _, err := strconv.Atoi(searchParam); err != nil {
+							eln("can't be converted to index")
+							continue l1
+						}
+						idx, err := strconv.Atoi(searchParam)
+						if err != nil {
+							errf("%s can't be converted to index\n", searchParam)
+							continue l1
+						} else if len(histories) < 1 {
 							eln("Err: No Histories")
 							continue l1
 						}
