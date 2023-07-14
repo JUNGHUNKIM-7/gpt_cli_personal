@@ -25,7 +25,13 @@ func getToken() (listOfKeys, listOfValues []string) {
 		keys []string
 		vals []string
 	)
-	f, err := os.Open("./env.txt")
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	path := fmt.Sprintf("%s\\env.txt", dir)
+
+	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
