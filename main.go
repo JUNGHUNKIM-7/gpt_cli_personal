@@ -134,6 +134,7 @@ l1:
 							continue l1
 						}
 						program.SetAll(histories)
+						histories = make([]model.QnaBody, 0)
 					case "q":
 						os.Exit(1)
 					default:
