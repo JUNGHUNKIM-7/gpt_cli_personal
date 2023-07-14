@@ -7,10 +7,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/JUNGHUNKIM-7/cli_gpt/model"
+	"github.com/fatih/color"
 )
 
 const (
@@ -115,6 +117,7 @@ func MakeRequest(qs string, defaultConfig *model.GptConfig, defaultEnv *model.En
 	}
 }
 
-func PrintBody(i int, b model.QnaBody) {
-	fmt.Printf("%d/-----\nQ:%s\nA:%s\n-------\n", i, b.Q, b.A)
+func PrintBody(i int, b model.QnaBody, answerFunc func(format string, a ...interface{})) {
+	fmt.Printf("Q[%s]: %s\n", color.CyanString(strconv.Itoa(i)), color.CyanString(b.Q))
+	answerFunc("A: %s\n", b.A)
 }

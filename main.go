@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -11,24 +10,18 @@ import (
 
 	"github.com/JUNGHUNKIM-7/cli_gpt/model"
 	"github.com/JUNGHUNKIM-7/cli_gpt/program"
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/fatih/color"
 )
 
 func main() {
-	// if keys, vals := program.GetToken(); keys == nil || vals == nil {
-	// 	log.Fatal("keys||vals are nil")
-	// } else {
-	// 	log.Fatal(runProgram(keys, vals))
-	// }
-
-	p := tea.NewProgram(program.InitialModel())
-	if _, err := p.Run(); err != nil {
-		log.Fatal(err)
+	if keys, vals := program.GetToken(); keys == nil || vals == nil {
+		log.Fatal("keys||vals are nil")
+	} else {
+		log.Fatal(runProgram(keys, vals))
 	}
 }
 
 func runProgram(listOfKeys, listOfValues []string) error {
-	fmt.Println("Running GPT...")
 	if program.FindValueByKey(listOfKeys, listOfValues, "openai") == "" {
 		log.Fatal("empty openai key")
 	}
@@ -42,9 +35,17 @@ func runProgram(listOfKeys, listOfValues []string) error {
 	wg := sync.WaitGroup{}
 	histories := make([]model.QnaBody, 0)
 
+	//color theme
+	y := color.New(color.FgYellow)
+	e := color.New(color.FgRed).Add(color.Italic)
+	g := color.New(color.FgGreen)
+	eln := e.PrintlnFunc()
+	errf := e.PrintfFunc()
+	answerf := g.PrintfFunc()
+
 l1:
 	for {
-		fmt.Printf("Query: ")
+		y.Printf("Message? |> ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			q := scanner.Text()
@@ -55,31 +56,31 @@ l1:
 					switch flag := strings.Split(q, " "); flag[0][1:] {
 					case "h":
 						if len(histories) < 1 {
-							fmt.Println("No histories")
+							eln("Err: No Histories")
 							continue l1
 						}
 						for i, v := range histories {
-							program.PrintBody(i, v)
+							program.PrintBody(i, v, answerf)
 						}
 					case "r":
 						param := strings.Split(q, " ")[1]
 						idx, err := strconv.Atoi(param)
 						if err != nil {
-							fmt.Printf("%s can't be converted to index\n", param)
+							errf("%s can't be converted to index\n", param)
 							continue l1
 						}
 						if len(histories) < 1 {
-							fmt.Println("No histories")
+							eln("Err: No Histories")
 							continue l1
 						}
 						histories = append(histories[:idx], histories[idx+1:]...)
 						for i, v := range histories {
-							program.PrintBody(i, v)
+							program.PrintBody(i, v, answerf)
 						}
 					case "q":
 						os.Exit(1)
 					default:
-						return fmt.Errorf("err: %s", "invalid command")
+						errf("Err: %s\n", "Invalid Command")
 					}
 				} else {
 					switch contains := !strings.ContainsRune(q, '@'); contains {
@@ -87,7 +88,7 @@ l1:
 						body := program.MakeRequest(q, config, defaultEnv, nil)
 						histories = append(histories, body)
 
-						program.PrintBody(-1, body)
+						program.PrintBody(-1, body, answerf)
 					case false:
 						qs := strings.Split(q, "@")
 
@@ -97,7 +98,7 @@ l1:
 								body := program.MakeRequest(str, config, defaultEnv, &wg)
 								histories = append(histories, body)
 
-								program.PrintBody(idx, body)
+								program.PrintBody(idx, body, answerf)
 							}(i, v)
 						}
 						wg.Wait()
