@@ -77,27 +77,23 @@ l1:
 							program.PrintBody(i, v, answerf)
 						}
 					case "r":
-						param := strings.Split(q, " ")[1:]
-						if len(param) == 0 {
-							eln("Search param hasn't not provided")
+						if searchParam, ok := checkParam(q, eln); !ok {
 							continue l1
-						}
-						searchParam := strings.Split(q, " ")[1]
-						if searchParam == "" {
-							eln("Save Index hasn't not provided")
-							continue l1
-						}
-						idx, err := strconv.Atoi(searchParam)
-						if err != nil {
-							eln("Can't be converted to index")
-							continue l1
-						} else if len(histories) < 1 {
-							cln("No Histories")
-							continue l1
-						}
-						histories = append(histories[:idx], histories[idx+1:]...)
-						for i, v := range histories {
-							program.PrintBody(i, v, answerf)
+						} else {
+							idx, err := strconv.Atoi(searchParam)
+							if err != nil {
+								eln("Can't be converted to index")
+								continue l1
+							}
+
+							if len(histories) < 1 {
+								cln("No Histories")
+								continue l1
+							}
+							histories = append(histories[:idx], histories[idx+1:]...)
+							for i, v := range histories {
+								program.PrintBody(i, v, answerf)
+							}
 						}
 					case "g":
 						param := strings.Split(q, " ")[1:]
@@ -111,30 +107,27 @@ l1:
 							program.PrintBody(i, *v, answerf)
 						}
 					case "s":
-						param := strings.Split(q, " ")[1:]
-						if len(param) == 0 {
-							eln("Save Index hasn't not provided")
+						if searchParam, ok := checkParam(q, eln); !ok {
 							continue l1
+						} else {
+							if _, err := strconv.Atoi(searchParam); err != nil {
+								eln("Can't be converted to index")
+								continue l1
+							}
+							idx, err := strconv.Atoi(searchParam)
+							if err != nil {
+								errf("%s can't be converted to index\n", searchParam)
+								continue l1
+							}
+
+							if len(histories) < 1 {
+								cln("No Histories")
+								continue l1
+							}
+							body := histories[idx]
+							program.SetData(&body)
+							histories = append(histories[:idx], histories[idx+1:]...)
 						}
-						searchParam := param[0]
-						if searchParam == "" {
-							eln("Save Index hasn't not provided")
-							continue l1
-						} else if _, err := strconv.Atoi(searchParam); err != nil {
-							eln("Can't be converted to index")
-							continue l1
-						}
-						idx, err := strconv.Atoi(searchParam)
-						if err != nil {
-							errf("%s can't be converted to index\n", searchParam)
-							continue l1
-						} else if len(histories) < 1 {
-							cln("No Histories")
-							continue l1
-						}
-						body := histories[idx]
-						program.SetData(&body)
-						histories = append(histories[:idx], histories[idx+1:]...)
 					case "a":
 						if len(histories) < 1 {
 							cln("No Histories")
@@ -173,4 +166,18 @@ l1:
 			}
 		}
 	}
+}
+
+func checkParam(q string, eln func(a ...interface{})) (string, bool) {
+	param := strings.Split(q, " ")[1:]
+	if len(param) == 0 {
+		eln("Search param hasn't not provided")
+		return "", false
+	}
+	searchParam := param[0]
+	if searchParam == "" {
+		eln("Save Index hasn't not provided")
+		return "", false
+	}
+	return searchParam, true
 }
