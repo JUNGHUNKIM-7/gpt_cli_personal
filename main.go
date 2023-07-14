@@ -134,6 +134,7 @@ l1:
 						}
 						body := histories[idx]
 						program.SetData(&body)
+						histories = append(histories[:idx], histories[idx+1:]...)
 					case "a":
 						if len(histories) < 1 {
 							cln("No Histories")
