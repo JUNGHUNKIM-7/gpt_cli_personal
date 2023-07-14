@@ -51,6 +51,8 @@ func runProgram(listOfKeys, listOfValues []string) error {
 	y := color.New(color.FgYellow)
 	e := color.New(color.FgRed).Add(color.Italic)
 	g := color.New(color.FgGreen)
+	c := color.New(color.FgCyan)
+	cln := c.PrintlnFunc()
 	eln := e.PrintlnFunc()
 	errf := e.PrintfFunc()
 	answerf := g.PrintfFunc()
@@ -68,20 +70,29 @@ l1:
 					switch flag := strings.Split(q, " "); flag[0][1:] {
 					case "h":
 						if len(histories) < 1 {
-							eln("Err: No Histories")
+							cln("No Histories")
 							continue l1
 						}
 						for i, v := range histories {
 							program.PrintBody(i, v, answerf)
 						}
 					case "r":
-						param := strings.Split(q, " ")[1]
-						idx, err := strconv.Atoi(param)
+						param := strings.Split(q, " ")[1:]
+						if len(param) == 0 {
+							eln("Search param hasn't not provided")
+							continue l1
+						}
+						searchParam := strings.Split(q, " ")[1]
+						if searchParam == "" {
+							eln("Save Index hasn't not provided")
+							continue l1
+						}
+						idx, err := strconv.Atoi(searchParam)
 						if err != nil {
-							eln("can't be converted to index")
+							eln("Can't be converted to index")
 							continue l1
 						} else if len(histories) < 1 {
-							eln("Err: No Histories")
+							cln("No Histories")
 							continue l1
 						}
 						histories = append(histories[:idx], histories[idx+1:]...)
@@ -110,7 +121,7 @@ l1:
 							eln("Save Index hasn't not provided")
 							continue l1
 						} else if _, err := strconv.Atoi(searchParam); err != nil {
-							eln("can't be converted to index")
+							eln("Can't be converted to index")
 							continue l1
 						}
 						idx, err := strconv.Atoi(searchParam)
@@ -118,21 +129,21 @@ l1:
 							errf("%s can't be converted to index\n", searchParam)
 							continue l1
 						} else if len(histories) < 1 {
-							eln("Err: No Histories")
+							cln("No Histories")
 							continue l1
 						}
 						body := histories[idx]
 						program.SetData(&body)
 					case "a":
 						if len(histories) < 1 {
-							eln("Err: No Histories")
+							cln("No Histories")
 							continue l1
 						}
 						program.SetAll(histories)
 					case "q":
 						os.Exit(1)
 					default:
-						errf("Err: %s\n", "Invalid Command")
+						eln("Invalid Command")
 					}
 				} else {
 					switch contains := !strings.ContainsRune(q, '@'); contains {
