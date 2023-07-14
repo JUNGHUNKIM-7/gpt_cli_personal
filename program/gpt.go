@@ -114,3 +114,7 @@ func MakeRequest(qs string, defaultConfig *model.GptConfig, defaultEnv *model.En
 		A: a,
 	}
 }
+
+func PrintBody(i int, b model.QnaBody) {
+	fmt.Printf("%d/-----\nQ:%s\nA:%s\n-------\n", i, b.Q, b.A)
+}

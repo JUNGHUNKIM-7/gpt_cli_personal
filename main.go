@@ -5,88 +5,46 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/JUNGHUNKIM-7/cli_gpt/model"
 	"github.com/JUNGHUNKIM-7/cli_gpt/program"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
-	if keys, vals := getToken(); keys == nil || vals == nil {
-		log.Fatal("keys||vals are nil")
-	} else {
-		log.Fatal(runProgram(keys, vals))
-	}
-}
+	// if keys, vals := program.GetToken(); keys == nil || vals == nil {
+	// 	log.Fatal("keys||vals are nil")
+	// } else {
+	// 	log.Fatal(runProgram(keys, vals))
+	// }
 
-func getToken() (listOfKeys, listOfValues []string) {
-	var (
-		keys []string
-		vals []string
-	)
-	dir, err := os.Getwd()
-	if err != nil {
+	p := tea.NewProgram(program.InitialModel())
+	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
-	path := fmt.Sprintf("%s\\env.txt", dir)
-
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		key, value := keyValueSplitter(scanner)
-		keys = append(keys, key)
-		vals = append(vals, value)
-	}
-
-	for _, v := range keys {
-		if v == "openai" {
-			listOfKeys = keys
-			listOfValues = vals
-			return
-		}
-	}
-	listOfKeys = nil
-	listOfValues = nil
-	return
-}
-
-func keyValueSplitter(scanner *bufio.Scanner) (string, string) {
-	vals := strings.Split(scanner.Text(), "=")
-	key, value := vals[0], vals[len(vals)-1]
-	return key, value
-}
-
-func findValueByKey(keys []string, key string) int {
-	for i, v := range keys {
-		if v == key {
-			return i
-		}
-	}
-	return -1
 }
 
 func runProgram(listOfKeys, listOfValues []string) error {
-	if findValueByKey(listOfKeys, "openai") == -1 {
+	fmt.Println("Running GPT...")
+	if program.FindValueByKey(listOfKeys, listOfValues, "openai") == "" {
 		log.Fatal("empty openai key")
 	}
 	config := &model.GptConfig{
 		Temperature: 0.5,
 	}
-	idx := findValueByKey(listOfKeys, "openai")
+	token := program.FindValueByKey(listOfKeys, listOfValues, "openai")
 	defaultEnv := &model.Env{
-		GptToken: listOfValues[idx],
+		GptToken: token,
 	}
 	wg := sync.WaitGroup{}
 	histories := make([]model.QnaBody, 0)
 
 l1:
 	for {
+		fmt.Printf("Query: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			q := scanner.Text()
@@ -96,11 +54,28 @@ l1:
 				if strings.ContainsRune(q, '-') {
 					switch flag := strings.Split(q, " "); flag[0][1:] {
 					case "h":
-						for _, v := range histories {
-							printBody(v)
+						if len(histories) < 1 {
+							fmt.Println("No histories")
+							continue l1
 						}
-					case "v":
-						fmt.Println("get v")
+						for i, v := range histories {
+							program.PrintBody(i, v)
+						}
+					case "r":
+						param := strings.Split(q, " ")[1]
+						idx, err := strconv.Atoi(param)
+						if err != nil {
+							fmt.Printf("%s can't be converted to index\n", param)
+							continue l1
+						}
+						if len(histories) < 1 {
+							fmt.Println("No histories")
+							continue l1
+						}
+						histories = append(histories[:idx], histories[idx+1:]...)
+						for i, v := range histories {
+							program.PrintBody(i, v)
+						}
 					case "q":
 						os.Exit(1)
 					default:
@@ -112,18 +87,18 @@ l1:
 						body := program.MakeRequest(q, config, defaultEnv, nil)
 						histories = append(histories, body)
 
-						printBody(body)
+						program.PrintBody(-1, body)
 					case false:
 						qs := strings.Split(q, "@")
 
 						wg.Add(len(qs))
-						for _, v := range qs {
-							go func(str string) {
+						for i, v := range qs {
+							go func(idx int, str string) {
 								body := program.MakeRequest(str, config, defaultEnv, &wg)
 								histories = append(histories, body)
 
-								printBody(body)
-							}(v)
+								program.PrintBody(idx, body)
+							}(i, v)
 						}
 						wg.Wait()
 					}
@@ -133,8 +108,4 @@ l1:
 			}
 		}
 	}
-}
-
-func printBody(b model.QnaBody) {
-	fmt.Printf("-----\nQ:%s\nA:%s\n-----\n", b.Q, b.A)
 }
