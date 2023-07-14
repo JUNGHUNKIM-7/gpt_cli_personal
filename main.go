@@ -16,7 +16,7 @@ func main() {
 	if keys, vals := getToken(); keys == nil || vals == nil {
 		log.Fatal("keys||vals are nil")
 	} else {
-		runProgram(keys, vals)
+		log.Fatal(runProgram(keys, vals))
 	}
 }
 
@@ -65,7 +65,7 @@ func findValueByKey(keys []string, key string) int {
 	return -1
 }
 
-func runProgram(listOfKeys, listOfValues []string) {
+func runProgram(listOfKeys, listOfValues []string) error {
 	if findValueByKey(listOfKeys, "openai") == -1 {
 		log.Fatal("empty openai key")
 	}
@@ -95,7 +95,10 @@ l1:
 						}
 					case "v":
 						fmt.Println("get v")
+					case "q":
+						os.Exit(1)
 					default:
+						return fmt.Errorf("err: %s", "invalid command")
 					}
 				} else {
 					switch contains := !strings.ContainsRune(q, '@'); contains {
@@ -120,12 +123,12 @@ l1:
 					}
 				}
 			case len(q) == 0:
-				break l1
+				continue l1
 			}
 		}
 	}
 }
 
 func printBody(b model.QnaBody) {
-	fmt.Printf("Q:%s\nA:%s\n-----\n", b.Q, b.A)
+	fmt.Printf("-----\nQ:%s\nA:%s\n-----\n", b.Q, b.A)
 }
