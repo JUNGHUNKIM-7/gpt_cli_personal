@@ -25,11 +25,12 @@ func GetCompletion(sysRole, cliRole model.Roles, config *model.GptConfig, envCon
 		Timeout: 5 * time.Minute,
 	}
 	var requestBody model.ReqBody
+	roles := RolesNew(sysRole, cliRole)
 
 	if config != nil {
 		requestBody = model.ReqBody{
 			Model:            mod,
-			Messages:         *RolesNew(sysRole, cliRole),
+			Messages:         *roles,
 			Temperature:      config.Temperature,
 			TopP:             config.TopP,
 			N:                config.N,
@@ -40,7 +41,7 @@ func GetCompletion(sysRole, cliRole model.Roles, config *model.GptConfig, envCon
 	} else {
 		requestBody = model.ReqBody{
 			Model:    mod,
-			Messages: *RolesNew(sysRole, cliRole),
+			Messages: *roles,
 		}
 	}
 
