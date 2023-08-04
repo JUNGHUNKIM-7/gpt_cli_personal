@@ -79,9 +79,8 @@ l1:
 						if searchParam, ok := checkParam(q, eln); !ok {
 							continue l1
 						} else {
-							idx, err := strconv.Atoi(searchParam)
+							idx, err := convertSearchParam(searchParam, errf)
 							if err != nil {
-								eln("Can't be converted to index")
 								continue l1
 							}
 							if isNoHistories(histories, cln) {
@@ -114,9 +113,8 @@ l1:
 								eln("Can't be converted to index")
 								continue l1
 							}
-							idx, err := strconv.Atoi(searchParam)
+							idx, err := convertSearchParam(searchParam, errf)
 							if err != nil {
-								errf("%s can't be converted to index\n", searchParam)
 								continue l1
 							}
 							if isNoHistories(histories, cln) {
@@ -169,6 +167,15 @@ l1:
 	}
 }
 
+func convertSearchParam(searchParam string, errf func(format string, a ...interface{})) (idx int, err error) {
+	idx, err = strconv.Atoi(searchParam)
+	if err != nil {
+		errf("%s can't be converted to index\n", searchParam)
+		return
+	}
+	return
+}
+
 func isNoHistories(histories []model.QnaBody, cln func(a ...interface{})) bool {
 	if len(histories) < 1 {
 		cln("No Histories")
@@ -185,15 +192,15 @@ func checkParam(q string, eln func(a ...interface{})) (string, bool) {
 	}
 	searchParam := param[0]
 	if searchParam == "" {
-		eln("Save Index hasn't not provided")
+		eln("Index hasn't not provided")
 		return "", false
 	}
 	return searchParam, true
 }
 
 func checkNegativeValue(s int, histories []model.QnaBody, eln func(a ...interface{})) bool {
-	if len(histories)-1 < s || s < 0 {
-		eln("Save Index can't be negative or exceeded than histories")
+	if s < 0 || len(histories) <= s {
+		eln("Index can't be negative or exceeded than histories")
 		return true
 	}
 	return false
