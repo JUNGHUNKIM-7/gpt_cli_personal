@@ -104,8 +104,9 @@ func MakeRequest(qs string, defaultConfig *model.GptConfig, defaultEnv *model.En
 	a := GetCompletion(
 		model.Roles{
 			Role:    "system",
-			Content: "You are a helpful assistant.",
-		}, model.Roles{
+			Content: "You are a programmer.",
+		},
+		model.Roles{
 			Role:    "user",
 			Content: any(qs).(string),
 		},

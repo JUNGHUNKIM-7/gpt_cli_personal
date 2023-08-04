@@ -38,7 +38,7 @@ func runProgram(listOfKeys, listOfValues []string) error {
 		log.Fatal("empty openai key")
 	}
 	config := &model.GptConfig{
-		Temperature: 0.5,
+		Temperature: 0.7,
 	}
 	token := program.FindValueByKey(listOfKeys, listOfValues, "openai")
 	defaultEnv := &model.Env{
@@ -69,8 +69,7 @@ l1:
 				if strings.ContainsRune(q, '-') {
 					switch flag := strings.Split(q, " "); flag[0][1:] {
 					case "h":
-						if len(histories) < 1 {
-							cln("No Histories")
+						if isNoHistories(histories, cln) {
 							continue l1
 						}
 						for i, v := range histories {
@@ -85,9 +84,10 @@ l1:
 								eln("Can't be converted to index")
 								continue l1
 							}
-
-							if len(histories) < 1 {
-								cln("No Histories")
+							if isNoHistories(histories, cln) {
+								continue l1
+							}
+							if checkNegativeValue(idx, histories, eln) {
 								continue l1
 							}
 							histories = append(histories[:idx], histories[idx+1:]...)
@@ -119,9 +119,10 @@ l1:
 								errf("%s can't be converted to index\n", searchParam)
 								continue l1
 							}
-
-							if len(histories) < 1 {
-								cln("No Histories")
+							if isNoHistories(histories, cln) {
+								continue l1
+							}
+							if checkNegativeValue(idx, histories, eln) {
 								continue l1
 							}
 							body := histories[idx]
@@ -129,8 +130,7 @@ l1:
 							histories = append(histories[:idx], histories[idx+1:]...)
 						}
 					case "a":
-						if len(histories) < 1 {
-							cln("No Histories")
+						if isNoHistories(histories, cln) {
 							continue l1
 						}
 						program.SetAll(histories)
@@ -169,6 +169,14 @@ l1:
 	}
 }
 
+func isNoHistories(histories []model.QnaBody, cln func(a ...interface{})) bool {
+	if len(histories) < 1 {
+		cln("No Histories")
+		return true
+	}
+	return false
+}
+
 func checkParam(q string, eln func(a ...interface{})) (string, bool) {
 	param := strings.Split(q, " ")[1:]
 	if len(param) == 0 {
@@ -181,4 +189,12 @@ func checkParam(q string, eln func(a ...interface{})) (string, bool) {
 		return "", false
 	}
 	return searchParam, true
+}
+
+func checkNegativeValue(s int, histories []model.QnaBody, eln func(a ...interface{})) bool {
+	if len(histories)-1 < s || s < 0 {
+		eln("Save Index can't be negative or exceeded than histories")
+		return true
+	}
+	return false
 }
